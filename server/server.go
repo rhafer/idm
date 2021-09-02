@@ -117,6 +117,7 @@ func (s *Server) Serve(ctx context.Context) error {
 
 	ldapHandler := s.LDAPHandler.WithContext(serveCtx)
 	s.LDAPServer.BindFunc("", ldapHandler)
+	s.LDAPServer.AddFunc("", ldapHandler)
 	s.LDAPServer.SearchFunc("", ldapHandler)
 	s.LDAPServer.CloseFunc("", ldapHandler)
 

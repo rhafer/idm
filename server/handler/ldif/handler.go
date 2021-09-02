@@ -201,6 +201,34 @@ func (h *ldifHandler) Bind(bindDN, bindSimplePw string, conn net.Conn) (ldapserv
 	return ldap.LDAPResultSuccess, nil
 }
 
+func (h *ldifHandler) Add(bindDN string, addReq *ldap.AddRequest, conn net.Conn) (ldapserver.LDAPResultCode, error) {
+	logger := h.logger
+	current := h.load()
+	e := &ldifEntry{
+		Entry: &ldap.Entry{
+			DN: strings.ToLower(addReq.DN),
+		},
+	}
+	for _, a := range addReq.Attributes {
+		e.Entry.Attributes = append(e.Entry.Attributes, &ldap.EntryAttribute{
+			Name:   a.Type,
+			Values: a.Vals,
+		})
+	}
+	v, ok := current.t.Insert([]byte(e.DN), e)
+	if !ok || v != nil {
+		return ldap.LDAPResultUnwillingToPerform, fmt.Errorf("duplicate dn value: %s", addReq.DN)
+	}
+	value := &ldifMemoryValue{
+		l:     current.l,
+		t:     current.t,
+		index: current.index,
+	}
+	h.current.Store(value)
+	logger.Printf("LDIF Add bindDn: %s, add dn: %s", bindDN, addReq.DN)
+	return ldap.LDAPResultSuccess, nil
+}
+
 func (h *ldifHandler) Search(bindDN string, searchReq *ldap.SearchRequest, conn net.Conn) (ldapserver.ServerSearchResult, error) {
 	bindDN = strings.ToLower(bindDN)
 	searchBaseDN := strings.ToLower(searchReq.BaseDN)

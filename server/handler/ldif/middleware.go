@@ -160,6 +160,10 @@ func (h *ldifMiddleware) Bind(bindDN, bindSimplePw string, conn net.Conn) (resul
 	return h.next.Bind(bindDN, bindSimplePw, conn)
 }
 
+func (h *ldifMiddleware) Add(bindDN string, addReq *ldap.AddRequest, conn net.Conn) (resultCode ldapserver.LDAPResultCode, err error) {
+	return h.next.Add(bindDN, addReq, conn)
+}
+
 func (h *ldifMiddleware) Search(bindDN string, searchReq *ldap.SearchRequest, conn net.Conn) (result ldapserver.ServerSearchResult, err error) {
 	return h.next.Search(bindDN, searchReq, conn)
 }

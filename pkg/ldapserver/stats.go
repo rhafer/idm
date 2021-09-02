@@ -16,6 +16,7 @@ type Stats struct {
 	Binds        uint64
 	Unbinds      uint64
 	Searches     uint64
+	Adds         uint64
 	statsMutex   sync.RWMutex
 }
 
@@ -63,6 +64,14 @@ func (stats *Stats) countSearches(delta uint64) {
 	}
 }
 
+func (stats *Stats) countAdds(delta uint64) {
+	if stats != nil {
+		stats.statsMutex.Lock()
+		stats.Adds += delta
+		stats.statsMutex.Unlock()
+	}
+}
+
 func (stats *Stats) Clone() *Stats {
 	var s2 *Stats
 	if stats != nil {
@@ -73,6 +82,7 @@ func (stats *Stats) Clone() *Stats {
 		s2.Binds = stats.Binds
 		s2.Unbinds = stats.Unbinds
 		s2.Searches = stats.Searches
+		s2.Adds = stats.Adds
 		stats.statsMutex.RUnlock()
 	}
 	return s2

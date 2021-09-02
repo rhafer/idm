@@ -14,6 +14,7 @@ import (
 // Interface for handlers.
 type Handler interface {
 	ldapserver.Binder
+	ldapserver.Adder
 	ldapserver.Searcher
 	ldapserver.Closer
 

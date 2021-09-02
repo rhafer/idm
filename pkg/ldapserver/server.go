@@ -12,12 +12,15 @@ import (
 	"net"
 	"strings"
 
-	"github.com/go-asn1-ber/asn1-ber"
+	ber "github.com/go-asn1-ber/asn1-ber"
 	"github.com/go-ldap/ldap/v3"
 )
 
 type Binder interface {
 	Bind(bindDN, bindSimplePw string, conn net.Conn) (LDAPResultCode, error)
+}
+type Adder interface {
+	Add(boundDN string, req *ldap.AddRequest, conn net.Conn) (LDAPResultCode, error)
 }
 type Searcher interface {
 	Search(boundDN string, req *ldap.SearchRequest, conn net.Conn) (ServerSearchResult, error)
@@ -28,6 +31,7 @@ type Closer interface {
 
 type Server struct {
 	BindFns     map[string]Binder
+	AddFns      map[string]Adder
 	SearchFns   map[string]Searcher
 	CloseFns    map[string]Closer
 	Quit        chan bool
@@ -48,6 +52,7 @@ func NewServer() *Server {
 
 	d := defaultHandler{}
 	s.BindFns = make(map[string]Binder)
+	s.AddFns = make(map[string]Adder)
 	s.SearchFns = make(map[string]Searcher)
 	s.CloseFns = make(map[string]Closer)
 	s.BindFunc("", d)
@@ -58,6 +63,9 @@ func NewServer() *Server {
 }
 func (server *Server) BindFunc(baseDN string, f Binder) {
 	server.BindFns[baseDN] = f
+}
+func (server *Server) AddFunc(baseDN string, f Adder) {
+	server.AddFns[baseDN] = f
 }
 func (server *Server) SearchFunc(baseDN string, f Searcher) {
 	server.SearchFns[baseDN] = f
@@ -230,6 +238,15 @@ handler:
 					break handler
 				}
 			}
+		case ldap.ApplicationAddRequest:
+			server.Stats.countAdds(1)
+			ldapResultCode := HandleAddRequest(req, boundDN, server, conn)
+			responsePacket := encodeLDAPResponse(messageID, ldap.ApplicationAddResponse, ldapResultCode, "")
+			if err = sendPacket(conn, responsePacket); err != nil {
+				log.Printf("sendPacket error %s", err.Error())
+				break handler
+			}
+
 		case ldap.ApplicationUnbindRequest:
 			server.Stats.countUnbinds(1)
 			break handler // Simply disconnect.
