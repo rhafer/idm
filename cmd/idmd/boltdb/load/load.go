@@ -42,7 +42,7 @@ func NewLDIFLoader(logLevel, dbFile, base string) (*LDIFLoader, error) {
 func (l *LDIFLoader) Load(ldifFile string) error {
 	bdb := &ldbbolt.LdbBolt{}
 
-	bdb.Configure(l.logger, l.baseDN, l.dbFile)
+	bdb.Configure(l.logger, l.baseDN, l.dbFile, nil)
 
 	if err := bdb.Initialize(); err != nil {
 		return err
