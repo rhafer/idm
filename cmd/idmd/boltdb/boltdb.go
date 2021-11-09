@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/libregraph/idm/cmd/idmd/boltdb/export"
 	"github.com/libregraph/idm/cmd/idmd/boltdb/load"
 )
 
@@ -46,7 +47,23 @@ need to	be correctly sorted, so that parent entries are created before their chi
 	loadLDIFCmd.Flags().StringVar(&LDAPBaseDN, "ldap-base-dn", LDAPBaseDN, "BaseDN for LDAP requests")
 	loadLDIFCmd.MarkFlagRequired("input-file")
 	loadLDIFCmd.MarkFlagRequired("ldap-base-dn")
+
+	exportLDIFCmd := &cobra.Command{
+		Use:   "export",
+		Short: "Export an existing database to LDIF",
+		Long:  `The export command exports LDAP entries in an existing BoltDB to stdout in LDIF.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := exportLDIF(cmd, args); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
+		},
+	}
+	exportLDIFCmd.Flags().StringVar(&LDAPBaseDN, "ldap-base-dn", LDAPBaseDN, "BaseDN for LDAP requests")
+	exportLDIFCmd.MarkFlagRequired("ldap-base-dn")
+
 	boltdbCmd.AddCommand(loadLDIFCmd)
+	boltdbCmd.AddCommand(exportLDIFCmd)
 
 	return boltdbCmd
 }
@@ -57,4 +74,13 @@ func loadLDIF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	return loader.Load(InputFile)
+}
+
+func exportLDIF(cmd *cobra.Command, args []string) error {
+	exporter, err := export.NewLDIFExporter(LogLevel, BoltDBFile, LDAPBaseDN)
+
+	if err != nil {
+		return err
+	}
+	return exporter.Export()
 }
